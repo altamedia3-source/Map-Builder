@@ -75,9 +75,9 @@ export default function Dashboard() {
       const mapRef = await addDoc(collection(db, 'maps'), {
         userId: user?.uid,
         title: 'Sample Theme Park Map',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Efteling_map_1974.jpg/1920px-Efteling_map_1974.jpg', // A real theme park map illustration
+        imageUrl: 'https://placehold.co/1920x1080/e2e8f0/475569.png?text=Sample+Theme+Park+Map', // Reliable placeholder
         imageWidth: 1920,
-        imageHeight: 1358,
+        imageHeight: 1080,
         createdAt: serverTimestamp()
       });
 
