@@ -75,9 +75,9 @@ export default function Dashboard() {
       const mapRef = await addDoc(collection(db, 'maps'), {
         userId: user?.uid,
         title: 'Sample Theme Park Map',
-        imageUrl: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?q=80&w=2070&auto=format&fit=crop', // A colorful abstract/park-like image
-        imageWidth: 2070,
-        imageHeight: 1380,
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Efteling_map_1974.jpg/1920px-Efteling_map_1974.jpg', // A real theme park map illustration
+        imageWidth: 1920,
+        imageHeight: 1358,
         createdAt: serverTimestamp()
       });
 
@@ -85,11 +85,11 @@ export default function Dashboard() {
       const batch = writeBatch(db);
 
       const sampleMarkers = [
-        { name: 'Main Entrance', category: 'public', markerNumber: '1', x: 200, y: 1000, description: 'Welcome to the park! Get your tickets here.' },
-        { name: 'Rollercoaster', category: 'info', markerNumber: '2', x: 800, y: 400, description: 'The scariest ride in the park. Must be 120cm to ride.' },
-        { name: 'Food Court', category: 'food', markerNumber: '3', x: 1200, y: 600, description: 'Burgers, hotdogs, and cold drinks.' },
-        { name: 'Water Park', category: 'pool', markerNumber: '4', x: 1600, y: 300, description: 'Cool down in the giant wave pool.' },
-        { name: 'Grand Hotel', category: 'room', markerNumber: '5', x: 1800, y: 900, description: 'Stay the night in our luxury resort.' },
+        { name: 'Main Entrance', category: 'ticket', markerNumber: '1', x: 960, y: 1200, description: 'Welcome to the park! Get your tickets here.' },
+        { name: 'Rollercoaster', category: 'ride', markerNumber: '2', x: 1500, y: 400, description: 'The scariest ride in the park. Must be 120cm to ride.' },
+        { name: 'Food Court', category: 'food', markerNumber: '3', x: 1000, y: 700, description: 'Burgers, hotdogs, and cold drinks.' },
+        { name: 'Water Park', category: 'pool', markerNumber: '4', x: 400, y: 500, description: 'Cool down in the giant wave pool.' },
+        { name: 'Grand Hotel', category: 'room', markerNumber: '5', x: 200, y: 1000, description: 'Stay the night in our luxury resort.' },
       ];
 
       sampleMarkers.forEach(marker => {
