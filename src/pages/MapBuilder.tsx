@@ -6,7 +6,12 @@ import { db } from '../lib/firebase';
 import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users, Search } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+
+const ALL_ICONS = Object.keys(LucideIcons).filter(key => 
+  key !== 'createLucideIcon' && key !== 'default' && key !== 'Icon' && key !== 'LucideProps' && /^[A-Z]/.test(key)
+);
 
 type ActionType = 'ADD' | 'EDIT' | 'DELETE';
 
@@ -75,9 +80,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   assembly: 'bg-green-700'
 };
 
-const createCustomIcon = (category: string, markerNumber?: string) => {
+const createCustomIcon = (category: string, markerNumber?: string, iconName?: string) => {
   const colorClass = CATEGORY_COLORS[category] || 'bg-indigo-600';
-  const iconNode = CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+  let iconNode = CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+  
+  if (iconName && (LucideIcons as any)[iconName]) {
+    const IconComponent = (LucideIcons as any)[iconName];
+    iconNode = <IconComponent className="w-4 h-4" />;
+  }
+  
   const iconHtml = renderToString(iconNode);
   
   if (markerNumber) {
@@ -128,7 +139,8 @@ export default function MapBuilder() {
     description: '',
     category: 'info',
     imageUrl: '',
-    markerNumber: ''
+    markerNumber: '',
+    icon: ''
   });
 
   // Undo/Redo state
@@ -246,7 +258,7 @@ export default function MapBuilder() {
   const handleMapClick = (e: L.LeafletMouseEvent) => {
     if (isAddingMarker) {
       setSelectedLocation({ x: e.latlng.lng, y: e.latlng.lat });
-      setFormData({ name: '', description: '', category: 'info', imageUrl: '', markerNumber: '' });
+      setFormData({ name: '', description: '', category: 'info', imageUrl: '', markerNumber: '', icon: '' });
       setEditingMarker(null);
       setIsAddingMarker(false);
     }
@@ -415,7 +427,7 @@ export default function MapBuilder() {
               <Marker 
                 key={marker.id} 
                 position={[marker.y, marker.x]}
-                icon={createCustomIcon(marker.category || 'info', marker.markerNumber)}
+                icon={createCustomIcon(marker.category || 'info', marker.markerNumber, marker.icon)}
                 eventHandlers={{
                   click: () => {
                     setEditingMarker(marker);
@@ -424,7 +436,8 @@ export default function MapBuilder() {
                       description: marker.description || '',
                       category: marker.category || 'info',
                       imageUrl: marker.imageUrl || '',
-                      markerNumber: marker.markerNumber || ''
+                      markerNumber: marker.markerNumber || '',
+                      icon: marker.icon || ''
                     });
                     setSelectedLocation(null);
                   }
@@ -463,7 +476,7 @@ export default function MapBuilder() {
             {selectedLocation && (
               <Marker 
                 position={[selectedLocation.y, selectedLocation.x]}
-                icon={createCustomIcon(formData.category, formData.markerNumber)}
+                icon={createCustomIcon(formData.category, formData.markerNumber, formData.icon)}
               >
                 <Popup className="custom-popup" closeButton={false}>
                   <div className="w-48 overflow-hidden rounded-xl shadow-lg bg-white">
@@ -561,6 +574,33 @@ export default function MapBuilder() {
                     <option value="medical">Clinic / First Aid</option>
                     <option value="parking">Parking Area</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Custom Icon (Optional)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      {formData.icon && (LucideIcons as any)[formData.icon] ? (
+                        React.createElement((LucideIcons as any)[formData.icon], { className: "h-4 w-4 text-indigo-600" })
+                      ) : (
+                        <Search className="h-4 w-4 text-slate-400" />
+                      )}
+                    </div>
+                    <input 
+                      type="text" 
+                      list="icon-list"
+                      value={formData.icon}
+                      onChange={(e) => setFormData({...formData, icon: e.target.value})}
+                      placeholder="Search lucide icons (e.g. Star, Heart)"
+                      className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                    />
+                    <datalist id="icon-list">
+                      {ALL_ICONS.map(icon => (
+                        <option key={icon} value={icon} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Overrides category icon if set.</p>
                 </div>
 
                 <div>

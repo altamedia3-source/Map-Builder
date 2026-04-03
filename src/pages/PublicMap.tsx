@@ -7,6 +7,7 @@ import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap, ZoomContro
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, Download, CheckCircle2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -67,9 +68,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 // Custom HTML Icon for Map
-const createCustomIcon = (category: string, markerNumber?: string) => {
+const createCustomIcon = (category: string, markerNumber?: string, iconName?: string) => {
   const colorClass = CATEGORY_COLORS[category] || 'bg-indigo-600';
-  const iconNode = CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+  let iconNode = CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+  
+  if (iconName && (LucideIcons as any)[iconName]) {
+    const IconComponent = (LucideIcons as any)[iconName];
+    iconNode = <IconComponent className="w-4 h-4" />;
+  }
+  
   const iconHtml = renderToString(iconNode);
   
   if (markerNumber) {
@@ -375,7 +382,7 @@ export default function PublicMap() {
           <Marker 
             key={marker.id} 
             position={[marker.y, marker.x]}
-            icon={createCustomIcon(marker.category, marker.markerNumber)}
+            icon={createCustomIcon(marker.category, marker.markerNumber, marker.icon)}
           >
             <Popup className="custom-popup" closeButton={false}>
               <div className="w-[280px] sm:w-80 -m-3 overflow-hidden rounded-2xl shadow-xl bg-white">
