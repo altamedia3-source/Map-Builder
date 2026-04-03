@@ -346,6 +346,48 @@ export default function PublicMap() {
         </button>
       </div>
 
+      {/* Navigation Overlay */}
+      {userLocation && routingTo && (
+        <div className="absolute bottom-20 sm:bottom-6 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-96 z-[1000] animate-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl border border-indigo-100 overflow-hidden">
+            <div className="bg-indigo-600 px-4 py-2 flex items-center justify-between text-white">
+              <div className="flex items-center gap-2">
+                <Navigation className="w-4 h-4 animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-wider">Navigation Active</span>
+              </div>
+              <button 
+                onClick={() => setRoutingTo(null)}
+                className="p-1 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <LogOut className="w-4 h-4 rotate-180" />
+              </button>
+            </div>
+            <div className="p-4 flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 ${CATEGORY_COLORS[routingTo.category] || 'bg-indigo-500'}`}>
+                {CATEGORY_ICONS[routingTo.category]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-slate-500 font-medium uppercase mb-0.5">Navigating to</div>
+                <div className="font-bold text-slate-900 truncate">{routingTo.name}</div>
+                <div className="text-xs text-indigo-600 font-semibold mt-1 flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping"></div>
+                  {Math.round(Math.sqrt(Math.pow(userLocation.x - routingTo.x, 2) + Math.pow(userLocation.y - routingTo.y, 2)))} units away
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  mapRef.current?.flyTo([routingTo.y, routingTo.x], 2, { duration: 1.5 });
+                }}
+                className="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition-colors"
+                title="Focus Target"
+              >
+                <MapPin className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation (Mobile Only) */}
       <div className="sm:hidden absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-[1000] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex justify-around items-center h-16">
