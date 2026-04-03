@@ -6,7 +6,7 @@ import { db } from '../lib/firebase';
 import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users } from 'lucide-react';
 
 type ActionType = 'ADD' | 'EDIT' | 'DELETE';
 
@@ -40,7 +40,14 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   medical: <HeartPulse className="w-4 h-4" />,
   ticket: <Ticket className="w-4 h-4" />,
   nature: <TreePine className="w-4 h-4" />,
-  game: <Gamepad2 className="w-4 h-4" />
+  game: <Gamepad2 className="w-4 h-4" />,
+  entrance: <DoorOpen className="w-4 h-4" />,
+  security: <Shield className="w-4 h-4" />,
+  prayer: <Moon className="w-4 h-4" />,
+  emergency: <LogOut className="w-4 h-4" />,
+  ecar: <BatteryCharging className="w-4 h-4" />,
+  toilet: <Droplets className="w-4 h-4" />,
+  assembly: <Users className="w-4 h-4" />
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -58,7 +65,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   medical: 'bg-red-500',
   ticket: 'bg-blue-600',
   nature: 'bg-green-600',
-  game: 'bg-violet-500'
+  game: 'bg-violet-500',
+  entrance: 'bg-emerald-600',
+  security: 'bg-blue-700',
+  prayer: 'bg-emerald-800',
+  emergency: 'bg-red-600',
+  ecar: 'bg-green-500',
+  toilet: 'bg-cyan-600',
+  assembly: 'bg-green-700'
 };
 
 const createCustomIcon = (category: string, markerNumber?: string) => {
@@ -416,9 +430,32 @@ export default function MapBuilder() {
                   }
                 }}
               >
-                <Popup>
-                  <div className="font-semibold">{marker.name}</div>
-                  <div className="text-xs text-slate-500">{marker.category}</div>
+                <Popup className="custom-popup" closeButton={false}>
+                  {(() => {
+                    const isEditing = editingMarker?.id === marker.id;
+                    const currentImageUrl = isEditing ? formData.imageUrl : marker.imageUrl;
+                    const currentName = isEditing ? formData.name : marker.name;
+                    const currentCategory = isEditing ? formData.category : marker.category;
+                    
+                    return (
+                      <div className="w-48 overflow-hidden rounded-xl shadow-lg bg-white">
+                        {currentImageUrl ? (
+                          <div className="h-32 w-full bg-slate-100 relative">
+                            <img src={currentImageUrl} alt={currentName} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="h-32 w-full bg-slate-100 flex flex-col items-center justify-center text-slate-400">
+                            <Camera className="w-8 h-8 mb-1 opacity-50" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider">No Image</span>
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <div className="font-bold text-sm text-slate-900 truncate">{currentName || 'Unnamed Marker'}</div>
+                          <div className="text-xs text-slate-500 capitalize">{currentCategory}</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </Popup>
               </Marker>
             ))}
@@ -428,7 +465,24 @@ export default function MapBuilder() {
                 position={[selectedLocation.y, selectedLocation.x]}
                 icon={createCustomIcon(formData.category, formData.markerNumber)}
               >
-                <Popup>New Marker Location</Popup>
+                <Popup className="custom-popup" closeButton={false}>
+                  <div className="w-48 overflow-hidden rounded-xl shadow-lg bg-white">
+                    {formData.imageUrl ? (
+                      <div className="h-32 w-full bg-slate-100 relative">
+                        <img src={formData.imageUrl} alt={formData.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="h-32 w-full bg-slate-100 flex flex-col items-center justify-center text-slate-400">
+                        <Camera className="w-8 h-8 mb-1 opacity-50" />
+                        <span className="text-[10px] font-medium uppercase tracking-wider">No Image</span>
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <div className="font-bold text-sm text-slate-900 truncate">{formData.name || 'New Marker'}</div>
+                      <div className="text-xs text-slate-500 capitalize">{formData.category}</div>
+                    </div>
+                  </div>
+                </Popup>
               </Marker>
             )}
           </MapContainer>
@@ -485,7 +539,14 @@ export default function MapBuilder() {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                   >
                     <option value="info">General Info</option>
-                    <option value="ticket">Ticket / Entrance</option>
+                    <option value="entrance">Pintu Masuk / Entrance</option>
+                    <option value="ticket">Loket Tiket</option>
+                    <option value="security">Pos Keamanan</option>
+                    <option value="prayer">Mushola</option>
+                    <option value="toilet">Toilet</option>
+                    <option value="emergency">Pintu Darurat</option>
+                    <option value="assembly">Titik Kumpul</option>
+                    <option value="ecar">Stasiun E-Car</option>
                     <option value="ride">Attraction / Ride</option>
                     <option value="animal">Zoo / Fauna</option>
                     <option value="nature">Park / Garden</option>
@@ -496,7 +557,7 @@ export default function MapBuilder() {
                     <option value="cafe">Cafe / Snack</option>
                     <option value="shop">Shopping / Souvenir</option>
                     <option value="room">Accommodation / Hotel</option>
-                    <option value="public">Public Facility (Toilet, Mushola)</option>
+                    <option value="public">Public Facility</option>
                     <option value="medical">Clinic / First Aid</option>
                     <option value="parking">Parking Area</option>
                   </select>

@@ -6,7 +6,7 @@ import { db } from '../lib/firebase';
 import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, Download, CheckCircle2 } from 'lucide-react';
+import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, Download, CheckCircle2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users } from 'lucide-react';
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -31,7 +31,14 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   medical: <HeartPulse className="w-4 h-4" />,
   ticket: <Ticket className="w-4 h-4" />,
   nature: <TreePine className="w-4 h-4" />,
-  game: <Gamepad2 className="w-4 h-4" />
+  game: <Gamepad2 className="w-4 h-4" />,
+  entrance: <DoorOpen className="w-4 h-4" />,
+  security: <Shield className="w-4 h-4" />,
+  prayer: <Moon className="w-4 h-4" />,
+  emergency: <LogOut className="w-4 h-4" />,
+  ecar: <BatteryCharging className="w-4 h-4" />,
+  toilet: <Droplets className="w-4 h-4" />,
+  assembly: <Users className="w-4 h-4" />
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -49,7 +56,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   medical: 'bg-red-500',
   ticket: 'bg-blue-600',
   nature: 'bg-green-600',
-  game: 'bg-violet-500'
+  game: 'bg-violet-500',
+  entrance: 'bg-emerald-600',
+  security: 'bg-blue-700',
+  prayer: 'bg-emerald-800',
+  emergency: 'bg-red-600',
+  ecar: 'bg-green-500',
+  toilet: 'bg-cyan-600',
+  assembly: 'bg-green-700'
 };
 
 // Custom HTML Icon for Map
