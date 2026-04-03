@@ -3,7 +3,7 @@ import { renderToString } from 'react-dom/server';
 import { useParams, useSearchParams } from 'react-router';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, Download, CheckCircle2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users } from 'lucide-react';
@@ -361,9 +361,11 @@ export default function PublicMap() {
         minZoom={-3}
         zoomSnap={0.5}
         wheelPxPerZoomLevel={120}
+        zoomControl={false}
         className="w-full h-full bg-slate-100 z-0"
         ref={mapRef}
       >
+        <ZoomControl position="bottomright" />
         <ImageOverlay
           url={mapData.imageUrl}
           bounds={bounds}
@@ -380,18 +382,17 @@ export default function PublicMap() {
                 {marker.imageUrl && (
                   <div className="h-40 w-full bg-slate-100 relative">
                     <img src={marker.imageUrl} alt={marker.name} className="w-full h-full object-cover" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   </div>
                 )}
-                <div className={`p-5 ${!marker.imageUrl ? 'pt-6' : '-mt-6 relative z-10'}`}>
+                <div className="p-5">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${marker.imageUrl ? 'bg-white/20 backdrop-blur-md text-white' : CATEGORY_COLORS[marker.category]?.replace('bg-', 'bg-opacity-10 text-') || 'bg-indigo-50 text-indigo-600'}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${CATEGORY_COLORS[marker.category]?.replace('bg-', 'bg-opacity-10 text-') || 'bg-indigo-50 text-indigo-600'}`}>
                       {marker.category}
                     </span>
                   </div>
-                  <h3 className={`font-bold text-xl leading-tight mb-2 ${marker.imageUrl ? 'text-white drop-shadow-md' : 'text-slate-900'}`}>{marker.name}</h3>
+                  <h3 className="font-bold text-xl leading-tight mb-2 text-slate-900">{marker.name}</h3>
                   {marker.description && (
-                    <p className={`text-sm mb-5 line-clamp-3 ${marker.imageUrl ? 'text-white/90' : 'text-slate-600'}`}>{marker.description}</p>
+                    <p className="text-sm mb-5 line-clamp-3 text-slate-600">{marker.description}</p>
                   )}
                   <button 
                     onClick={() => {

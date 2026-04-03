@@ -56,3 +56,15 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Adjust zoom control position to avoid overlapping with bottom nav and FAB */
+.leaflet-bottom.leaflet-right {
+  margin-bottom: 10rem !important; /* Push up above FAB on mobile */
+  margin-right: 1rem !important;
+}
+
+@media (min-width: 640px) {
+  .leaflet-bottom.leaflet-right {
+    margin-bottom: 6rem !important; /* Push up above FAB on desktop */
+  }
+}
