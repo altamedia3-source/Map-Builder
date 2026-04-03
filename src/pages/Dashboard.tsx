@@ -38,22 +38,25 @@ export default function Dashboard() {
     if (!newMapTitle || !newMapUrl) return;
 
     try {
-      // In a real app, we would upload the image to Firebase Storage and get the dimensions.
-      // For this demo, we'll assume a default dimension or require the user to provide a valid image URL.
       const img = new Image();
       img.onload = async () => {
-        const docRef = await addDoc(collection(db, 'maps'), {
-          userId: user?.uid,
-          title: newMapTitle,
-          imageUrl: newMapUrl,
-          imageWidth: img.width,
-          imageHeight: img.height,
-          createdAt: serverTimestamp()
-        });
-        setIsCreating(false);
-        setNewMapTitle('');
-        setNewMapUrl('');
-        navigate(`/builder/${docRef.id}`);
+        try {
+          const docRef = await addDoc(collection(db, 'maps'), {
+            userId: user?.uid,
+            title: newMapTitle,
+            imageUrl: newMapUrl,
+            imageWidth: img.width,
+            imageHeight: img.height,
+            createdAt: serverTimestamp()
+          });
+          setIsCreating(false);
+          setNewMapTitle('');
+          setNewMapUrl('');
+          navigate(`/builder/${docRef.id}`);
+        } catch (dbError: any) {
+          console.error("Database error:", dbError);
+          alert(`Failed to save to database.\n\nError: ${dbError.message || dbError.code}\n\nMake sure Firestore Database is created and Security Rules allow writing.`);
+        }
       };
       img.onerror = () => {
         alert("Failed to load image. Please check the URL.");
