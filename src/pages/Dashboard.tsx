@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, auth, signOut } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Map, Plus, LogOut, MoreVertical, Edit2, Trash2, ExternalLink } from 'lucide-react';
@@ -68,6 +68,49 @@ export default function Dashboard() {
     }
   };
 
+  const handleCreateSampleMap = async () => {
+    setIsCreating(true);
+    try {
+      // 1. Create Map
+      const mapRef = await addDoc(collection(db, 'maps'), {
+        userId: user?.uid,
+        title: 'Sample Theme Park Map',
+        imageUrl: 'https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?q=80&w=2070&auto=format&fit=crop', // A colorful abstract/park-like image
+        imageWidth: 2070,
+        imageHeight: 1380,
+        createdAt: serverTimestamp()
+      });
+
+      // 2. Create Markers using Batch
+      const batch = writeBatch(db);
+
+      const sampleMarkers = [
+        { name: 'Main Entrance', category: 'public', markerNumber: '1', x: 200, y: 1000, description: 'Welcome to the park! Get your tickets here.' },
+        { name: 'Rollercoaster', category: 'info', markerNumber: '2', x: 800, y: 400, description: 'The scariest ride in the park. Must be 120cm to ride.' },
+        { name: 'Food Court', category: 'food', markerNumber: '3', x: 1200, y: 600, description: 'Burgers, hotdogs, and cold drinks.' },
+        { name: 'Water Park', category: 'pool', markerNumber: '4', x: 1600, y: 300, description: 'Cool down in the giant wave pool.' },
+        { name: 'Grand Hotel', category: 'room', markerNumber: '5', x: 1800, y: 900, description: 'Stay the night in our luxury resort.' },
+      ];
+
+      sampleMarkers.forEach(marker => {
+        const markerRef = doc(collection(db, 'markers'));
+        batch.set(markerRef, {
+          mapId: mapRef.id,
+          ...marker
+        });
+      });
+
+      await batch.commit();
+
+      setIsCreating(false);
+      navigate(`/builder/${mapRef.id}`);
+    } catch (error: any) {
+      console.error("Error creating sample map:", error);
+      alert(`Failed to create sample map.\n\nError: ${error.message || error.code}`);
+      setIsCreating(false);
+    }
+  };
+
   const handleDeleteMap = async (mapId: string) => {
     if (window.confirm("Are you sure you want to delete this map?")) {
       try {
@@ -106,13 +149,21 @@ export default function Dashboard() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Your Maps</h1>
-          <button 
-            onClick={() => setIsCreating(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Create Map
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleCreateSampleMap}
+              className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+            >
+              Generate Sample Map
+            </button>
+            <button 
+              onClick={() => setIsCreating(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Create Map
+            </button>
+          </div>
         </div>
 
         {isCreating && (
@@ -168,12 +219,20 @@ export default function Dashboard() {
             <Map className="w-12 h-12 text-slate-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 mb-1">No maps yet</h3>
             <p className="text-slate-500 mb-6">Create your first interactive map to get started.</p>
-            <button 
-              onClick={() => setIsCreating(true)}
-              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              Create Map
-            </button>
+            <div className="flex justify-center gap-3">
+              <button 
+                onClick={handleCreateSampleMap}
+                className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Generate Sample Map
+              </button>
+              <button 
+                onClick={() => setIsCreating(true)}
+                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Create Map
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

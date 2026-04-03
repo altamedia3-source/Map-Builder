@@ -32,12 +32,25 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 // Custom HTML Icon for Map
-const createCustomIcon = (category: string) => {
+const createCustomIcon = (category: string, markerNumber?: string) => {
   const colorClass = CATEGORY_COLORS[category] || 'bg-indigo-600';
+  
+  if (markerNumber) {
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="w-8 h-8 rounded-full ${colorClass} text-white flex items-center justify-center shadow-lg border-2 border-white transform transition-transform hover:scale-110 font-bold text-sm">
+              ${markerNumber}
+             </div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -16],
+    });
+  }
+
   return L.divIcon({
     className: 'custom-marker',
     html: `<div class="w-8 h-8 rounded-full ${colorClass} text-white flex items-center justify-center shadow-lg border-2 border-white transform transition-transform hover:scale-110">
-            <div class="w-4 h-4"></div>
+            <div class="w-3 h-3 bg-white rounded-full"></div>
            </div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 32],
@@ -227,7 +240,7 @@ export default function PublicMap() {
           <Marker 
             key={marker.id} 
             position={[marker.y, marker.x]}
-            icon={createCustomIcon(marker.category)}
+            icon={createCustomIcon(marker.category, marker.markerNumber)}
           >
             <Popup className="custom-popup">
               <div className="w-64 -m-3">
