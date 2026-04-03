@@ -1,0 +1,21 @@
+{
+  "name": "Map Builder",
+  "short_name": "MapApp",
+  "description": "Interactive Map Application",
+  "theme_color": "#22c55e",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "https://api.iconify.design/lucide:map.svg?color=%2322c55e",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://api.iconify.design/lucide:map.svg?color=%2322c55e",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
