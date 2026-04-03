@@ -18,9 +18,9 @@ export default function LandingPage() {
     try {
       await signInWithPopup(auth, googleProvider);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed", error);
-      alert("Login failed. Please make sure Firebase is configured correctly.");
+      alert(`Login failed.\n\nError: ${error.message || error.code || 'Unknown error'}\n\nMake sure your Vercel URL is added to Firebase Authorized Domains.`);
     }
   };
 
