@@ -1,0 +1,7 @@
+{
+  "name": "Map-Builder",
+  "description": "SaaS platform to create, store, and share interactive custom maps using Leaflet JS.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

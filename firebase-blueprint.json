@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Map-Builder SaaS.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the user account was created."
+        }
+      },
+      "required": ["name", "email"]
+    },
+    "Map": {
+      "title": "Map",
+      "description": "A custom map created by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who owns this map."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the map."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description of the map."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "The URL of the uploaded map image (floorplan/layout)."
+        },
+        "imageWidth": {
+          "type": "number",
+          "description": "The original width of the image."
+        },
+        "imageHeight": {
+          "type": "number",
+          "description": "The original height of the image."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the map was created."
+        }
+      },
+      "required": ["userId", "title", "imageUrl", "imageWidth", "imageHeight"]
+    },
+    "Marker": {
+      "title": "Marker",
+      "description": "A point of interest on a map.",
+      "type": "object",
+      "properties": {
+        "mapId": {
+          "type": "string",
+          "description": "The ID of the map this marker belongs to."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the location."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the location."
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of the marker (e.g., food, pool, room)."
+        },
+        "icon": {
+          "type": "string",
+          "description": "An emoji or icon identifier for the marker."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "An optional image URL for the marker popup."
+        },
+        "x": {
+          "type": "number",
+          "description": "The X coordinate on the map image."
+        },
+        "y": {
+          "type": "number",
+          "description": "The Y coordinate on the map image."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the marker was created."
+        }
+      },
+      "required": ["mapId", "name", "category", "x", "y"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "User"
+      },
+      "description": "Stores user profiles."
+    },
+    "/maps/{mapId}": {
+      "schema": {
+        "$ref": "Map"
+      },
+      "description": "Stores custom maps created by users."
+    },
+    "/markers/{markerId}": {
+      "schema": {
+        "$ref": "Marker"
+      },
+      "description": "Stores markers for all maps."
+    }
+  }
+}

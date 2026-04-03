@@ -1,0 +1,97 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['name', 'email', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidMap(data) {
+      return hasRequiredFields(['userId', 'title', 'imageUrl', 'imageWidth', 'imageHeight']) &&
+             data.userId is string &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.imageUrl is string && data.imageUrl.size() < 2000 &&
+             data.imageWidth is number && data.imageWidth > 0 &&
+             data.imageHeight is number && data.imageHeight > 0;
+    }
+
+    function isValidMarker(data) {
+      return hasRequiredFields(['mapId', 'name', 'category', 'x', 'y']) &&
+             data.mapId is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.x is number &&
+             data.y is number &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() < 50)) &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 2000));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isOwner(userId);
+    }
+
+    match /maps/{mapId} {
+      // Maps are public so anyone can view them via share link
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid && 
+                    isValidMap(request.resource.data);
+      allow update: if isAuthenticated() && 
+                    resource.data.userId == request.auth.uid && 
+                    request.resource.data.userId == request.auth.uid && 
+                    isValidMap(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    match /markers/{markerId} {
+      // Markers are public so anyone can view them on the shared map
+      allow read: if true;
+      
+      // To create/update/delete a marker, the user must own the map it belongs to
+      allow create: if isAuthenticated() && 
+                    isValidMarker(request.resource.data) &&
+                    get(/databases/$(database)/documents/maps/$(request.resource.data.mapId)).data.userId == request.auth.uid;
+                    
+      allow update: if isAuthenticated() && 
+                    isValidMarker(request.resource.data) &&
+                    request.resource.data.mapId == resource.data.mapId &&
+                    get(/databases/$(database)/documents/maps/$(resource.data.mapId)).data.userId == request.auth.uid;
+                    
+      allow delete: if isAuthenticated() && 
+                    get(/databases/$(database)/documents/maps/$(resource.data.mapId)).data.userId == request.auth.uid;
+    }
+  }
+}
