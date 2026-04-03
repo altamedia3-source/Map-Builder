@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2 } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2 } from 'lucide-react';
 
 type ActionType = 'ADD' | 'EDIT' | 'DELETE';
 
@@ -25,19 +25,39 @@ L.Icon.Default.mergeOptions({
 });
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  food: <Coffee className="w-4 h-4" />,
+  info: <Info className="w-4 h-4" />,
+  food: <Utensils className="w-4 h-4" />,
+  cafe: <Coffee className="w-4 h-4" />,
   room: <Bed className="w-4 h-4" />,
   pool: <Waves className="w-4 h-4" />,
   public: <Building className="w-4 h-4" />,
-  info: <Info className="w-4 h-4" />
+  ride: <FerrisWheel className="w-4 h-4" />,
+  animal: <PawPrint className="w-4 h-4" />,
+  shop: <ShoppingBag className="w-4 h-4" />,
+  parking: <Car className="w-4 h-4" />,
+  photo: <Camera className="w-4 h-4" />,
+  medical: <HeartPulse className="w-4 h-4" />,
+  ticket: <Ticket className="w-4 h-4" />,
+  nature: <TreePine className="w-4 h-4" />,
+  game: <Gamepad2 className="w-4 h-4" />
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
+  info: 'bg-slate-500',
   food: 'bg-orange-500',
+  cafe: 'bg-amber-600',
   room: 'bg-indigo-500',
   pool: 'bg-cyan-500',
   public: 'bg-emerald-500',
-  info: 'bg-slate-500'
+  ride: 'bg-purple-500',
+  animal: 'bg-yellow-600',
+  shop: 'bg-pink-500',
+  parking: 'bg-slate-700',
+  photo: 'bg-teal-500',
+  medical: 'bg-red-500',
+  ticket: 'bg-blue-600',
+  nature: 'bg-green-600',
+  game: 'bg-violet-500'
 };
 
 const createCustomIcon = (category: string, markerNumber?: string) => {
@@ -455,10 +475,20 @@ export default function MapBuilder() {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
                   >
                     <option value="info">General Info</option>
-                    <option value="food">Food & Dining</option>
-                    <option value="room">Accommodation</option>
-                    <option value="pool">Pool & Leisure</option>
-                    <option value="public">Public Facility</option>
+                    <option value="ticket">Ticket / Entrance</option>
+                    <option value="ride">Attraction / Ride</option>
+                    <option value="animal">Zoo / Fauna</option>
+                    <option value="nature">Park / Garden</option>
+                    <option value="pool">Water Park / Pool</option>
+                    <option value="game">Arcade / Games</option>
+                    <option value="photo">Photo Spot</option>
+                    <option value="food">Restaurant / Dining</option>
+                    <option value="cafe">Cafe / Snack</option>
+                    <option value="shop">Shopping / Souvenir</option>
+                    <option value="room">Accommodation / Hotel</option>
+                    <option value="public">Public Facility (Toilet, Mushola)</option>
+                    <option value="medical">Clinic / First Aid</option>
+                    <option value="parking">Parking Area</option>
                   </select>
                 </div>
 

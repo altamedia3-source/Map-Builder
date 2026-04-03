@@ -5,7 +5,7 @@ import { db } from '../lib/firebase';
 import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building } from 'lucide-react';
+import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2 } from 'lucide-react';
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,20 +15,40 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const CATEGORY_COLORS: Record<string, string> = {
-  food: 'bg-orange-500',
-  room: 'bg-indigo-500',
-  pool: 'bg-cyan-500',
-  public: 'bg-emerald-500',
-  info: 'bg-slate-500'
-};
-
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  food: <Coffee className="w-4 h-4" />,
+  info: <Info className="w-4 h-4" />,
+  food: <Utensils className="w-4 h-4" />,
+  cafe: <Coffee className="w-4 h-4" />,
   room: <Bed className="w-4 h-4" />,
   pool: <Waves className="w-4 h-4" />,
   public: <Building className="w-4 h-4" />,
-  info: <Info className="w-4 h-4" />
+  ride: <FerrisWheel className="w-4 h-4" />,
+  animal: <PawPrint className="w-4 h-4" />,
+  shop: <ShoppingBag className="w-4 h-4" />,
+  parking: <Car className="w-4 h-4" />,
+  photo: <Camera className="w-4 h-4" />,
+  medical: <HeartPulse className="w-4 h-4" />,
+  ticket: <Ticket className="w-4 h-4" />,
+  nature: <TreePine className="w-4 h-4" />,
+  game: <Gamepad2 className="w-4 h-4" />
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  info: 'bg-slate-500',
+  food: 'bg-orange-500',
+  cafe: 'bg-amber-600',
+  room: 'bg-indigo-500',
+  pool: 'bg-cyan-500',
+  public: 'bg-emerald-500',
+  ride: 'bg-purple-500',
+  animal: 'bg-yellow-600',
+  shop: 'bg-pink-500',
+  parking: 'bg-slate-700',
+  photo: 'bg-teal-500',
+  medical: 'bg-red-500',
+  ticket: 'bg-blue-600',
+  nature: 'bg-green-600',
+  game: 'bg-violet-500'
 };
 
 // Custom HTML Icon for Map
