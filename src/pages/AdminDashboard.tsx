@@ -12,11 +12,13 @@ interface UserRecord {
   email: string;
   role: string;
   createdAt: any;
+  mapCount?: number;
 }
 
 export default function AdminDashboard() {
   const { isAdmin, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [mapCounts, setMapCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -28,8 +30,9 @@ export default function AdminDashboard() {
       return;
     }
 
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Subscribe to users
+    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+    const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
       const usersData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -38,7 +41,23 @@ export default function AdminDashboard() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Subscribe to maps to get counts
+    const mapsQuery = collection(db, 'maps');
+    const unsubscribeMaps = onSnapshot(mapsQuery, (snapshot) => {
+      const counts: Record<string, number> = {};
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        if (data.userId) {
+          counts[data.userId] = (counts[data.userId] || 0) + 1;
+        }
+      });
+      setMapCounts(counts);
+    });
+
+    return () => {
+      unsubscribeUsers();
+      unsubscribeMaps();
+    };
   }, [isAdmin, authLoading, navigate]);
 
   const toggleAdmin = async (userId: string, currentRole: string) => {
@@ -60,7 +79,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
+  const usersWithCounts = users.map(user => ({
+    ...user,
+    mapCount: mapCounts[user.id] || 0
+  }));
+
+  const filteredUsers = usersWithCounts.filter(user => 
     user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -75,6 +99,8 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const totalMaps = Object.values(mapCounts).reduce((a: number, b: number) => a + b, 0);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
@@ -107,7 +133,7 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -151,6 +177,21 @@ export default function AdminDashboard() {
               <div className="text-sm text-slate-500">Regular Users</div>
             </div>
           </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4"
+          >
+            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+              <MapIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-slate-900">{totalMaps}</div>
+              <div className="text-sm text-slate-500">Total Maps</div>
+            </div>
+          </motion.div>
         </div>
 
         {/* User Management */}
@@ -175,6 +216,7 @@ export default function AdminDashboard() {
                 <tr className="bg-slate-50/50">
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Maps</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Joined</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -213,6 +255,12 @@ export default function AdminDashboard() {
                           {user.role || 'user'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-sm font-bold border border-slate-200">
+                          <MapIcon className="w-3.5 h-3.5 text-slate-400" />
+                          {user.mapCount}
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-slate-600 flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -246,7 +294,7 @@ export default function AdminDashboard() {
                 </AnimatePresence>
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-8 h-8 opacity-20" />
                         <p>No users found matching your search.</p>
