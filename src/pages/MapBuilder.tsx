@@ -80,6 +80,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   assembly: 'bg-green-700'
 };
 
+// Helper to get icon node for a marker
+const getMarkerIcon = (category: string, iconName?: string) => {
+  if (iconName && (LucideIcons as any)[iconName]) {
+    const IconComponent = (LucideIcons as any)[iconName];
+    return <IconComponent className="w-3 h-3" />;
+  }
+  return CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+};
+
 const createCustomIcon = (category: string, markerNumber?: string, iconName?: string) => {
   const colorClass = CATEGORY_COLORS[category] || 'bg-indigo-600';
   let iconNode = CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
@@ -463,8 +472,13 @@ export default function MapBuilder() {
                           </div>
                         )}
                         <div className="p-3">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider border ${CATEGORY_COLORS[currentCategory || 'info']?.replace('bg-', 'bg-opacity-10 text- border-') || 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+                              {getMarkerIcon(currentCategory || 'info', isEditing ? formData.icon : marker.icon)}
+                              {currentCategory}
+                            </span>
+                          </div>
                           <div className="font-bold text-sm text-slate-900 truncate">{currentName || 'Unnamed Marker'}</div>
-                          <div className="text-xs text-slate-500 capitalize">{currentCategory}</div>
                         </div>
                       </div>
                     );
@@ -491,8 +505,13 @@ export default function MapBuilder() {
                       </div>
                     )}
                     <div className="p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider border ${CATEGORY_COLORS[formData.category || 'info']?.replace('bg-', 'bg-opacity-10 text- border-') || 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+                          {getMarkerIcon(formData.category || 'info', formData.icon)}
+                          {formData.category}
+                        </span>
+                      </div>
                       <div className="font-bold text-sm text-slate-900 truncate">{formData.name || 'New Marker'}</div>
-                      <div className="text-xs text-slate-500 capitalize">{formData.category}</div>
                     </div>
                   </div>
                 </Popup>

@@ -67,6 +67,15 @@ const CATEGORY_COLORS: Record<string, string> = {
   assembly: 'bg-green-700'
 };
 
+// Helper to get icon node for a marker
+const getMarkerIcon = (category: string, iconName?: string) => {
+  if (iconName && (LucideIcons as any)[iconName]) {
+    const IconComponent = (LucideIcons as any)[iconName];
+    return <IconComponent className="w-3 h-3" />;
+  }
+  return CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+};
+
 // Custom HTML Icon for Map
 const createCustomIcon = (category: string, markerNumber?: string, iconName?: string) => {
   const colorClass = CATEGORY_COLORS[category] || 'bg-indigo-600';
@@ -392,8 +401,9 @@ export default function PublicMap() {
                   </div>
                 )}
                 <div className="p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${CATEGORY_COLORS[marker.category]?.replace('bg-', 'bg-opacity-10 text-') || 'bg-indigo-50 text-indigo-600'}`}>
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${CATEGORY_COLORS[marker.category]?.replace('bg-', 'bg-opacity-10 text- border-') || 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+                      {getMarkerIcon(marker.category, marker.icon)}
                       {marker.category}
                     </span>
                   </div>
