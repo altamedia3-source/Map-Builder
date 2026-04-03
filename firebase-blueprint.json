@@ -100,6 +100,33 @@
         }
       },
       "required": ["mapId", "name", "category", "x", "y"]
+    },
+    "Path": {
+      "title": "Path",
+      "description": "A walkable path segment on a map.",
+      "type": "object",
+      "properties": {
+        "mapId": {
+          "type": "string",
+          "description": "The ID of the map this path belongs to."
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            }
+          },
+          "description": "An ordered list of coordinates making up the path."
+        },
+        "createdAt": {
+          "type": "timestamp",
+          "description": "When the path was created."
+        }
+      },
+      "required": ["mapId", "points"]
     }
   },
   "firestore": {
@@ -120,6 +147,12 @@
         "$ref": "Marker"
       },
       "description": "Stores markers for all maps."
+    },
+    "/paths/{pathId}": {
+      "schema": {
+        "$ref": "Path"
+      },
+      "description": "Stores walkable paths for maps."
     }
   }
 }

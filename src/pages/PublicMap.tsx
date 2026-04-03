@@ -6,8 +6,111 @@ import { db } from '../lib/firebase';
 import { MapContainer, ImageOverlay, Marker, Popup, Polyline, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, Download, CheckCircle2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users } from 'lucide-react';
+import { MapPin, Navigation, Search, Layers, Crosshair, Coffee, Bed, Waves, Info, Building, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, Download, CheckCircle2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users, Waypoints } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+
+// Pathfinding helper
+interface Point { x: number; y: number; }
+interface Node extends Point { id: string; }
+
+const findShortestPath = (start: Point, end: Point, paths: any[]) => {
+  if (paths.length === 0) return [start, end];
+
+  // 1. Create nodes from all path points
+  const nodes: Node[] = [];
+  const edges: { from: string, to: string, dist: number }[] = [];
+
+  paths.forEach((path, pathIdx) => {
+    path.points.forEach((p: Point, pointIdx: number) => {
+      const id = `p${pathIdx}-${pointIdx}`;
+      nodes.push({ ...p, id });
+      
+      if (pointIdx > 0) {
+        const prevId = `p${pathIdx}-${pointIdx - 1}`;
+        const dist = Math.sqrt(Math.pow(p.x - path.points[pointIdx-1].x, 2) + Math.pow(p.y - path.points[pointIdx-1].y, 2));
+        edges.push({ from: prevId, to: id, dist });
+        edges.push({ from: id, to: prevId, dist });
+      }
+    });
+  });
+
+  // 2. Connect close nodes from different paths
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const dist = Math.sqrt(Math.pow(nodes[i].x - nodes[j].x, 2) + Math.pow(nodes[i].y - nodes[j].y, 2));
+      if (dist < 15) { // Connection threshold
+        edges.push({ from: nodes[i].id, to: nodes[j].id, dist });
+        edges.push({ from: nodes[j].id, to: nodes[i].id, dist });
+      }
+    }
+  }
+
+  // 3. Find nearest nodes to start and end
+  let startNodeId = '';
+  let endNodeId = '';
+  let minDistStart = Infinity;
+  let minDistEnd = Infinity;
+
+  nodes.forEach(node => {
+    const dStart = Math.sqrt(Math.pow(node.x - start.x, 2) + Math.pow(node.y - start.y, 2));
+    const dEnd = Math.sqrt(Math.pow(node.x - end.x, 2) + Math.pow(node.y - end.y, 2));
+    if (dStart < minDistStart) { minDistStart = dStart; startNodeId = node.id; }
+    if (dEnd < minDistEnd) { minDistEnd = dEnd; endNodeId = node.id; }
+  });
+
+  if (!startNodeId || !endNodeId) return [start, end];
+
+  // 4. Dijkstra's Algorithm
+  const distances: Record<string, number> = {};
+  const previous: Record<string, string | null> = {};
+  const queue = new Set<string>();
+
+  nodes.forEach(node => {
+    distances[node.id] = Infinity;
+    previous[node.id] = null;
+    queue.add(node.id);
+  });
+
+  distances[startNodeId] = 0;
+
+  while (queue.size > 0) {
+    let uId = '';
+    let minD = Infinity;
+    queue.forEach(id => {
+      if (distances[id] < minD) { minD = distances[id]; uId = id; }
+    });
+
+    if (!uId || distances[uId] === Infinity) break;
+    if (uId === endNodeId) break;
+
+    queue.delete(uId);
+
+    edges.filter(e => e.from === uId).forEach(edge => {
+      const alt = distances[uId] + edge.dist;
+      if (alt < distances[edge.to]) {
+        distances[edge.to] = alt;
+        previous[edge.to] = uId;
+      }
+    });
+  }
+
+  // 5. Reconstruct path
+  const result: Point[] = [];
+  let curr: string | null = endNodeId;
+  
+  if (previous[endNodeId] || endNodeId === startNodeId) {
+    while (curr) {
+      const node = nodes.find(n => n.id === curr);
+      if (node) result.unshift({ x: node.x, y: node.y });
+      curr = previous[curr];
+    }
+    result.unshift(start);
+    result.push(end);
+    return result;
+  }
+
+  return [start, end];
+};
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -125,11 +228,13 @@ export default function PublicMap() {
   
   const [mapData, setMapData] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
+  const [paths, setPaths] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{x: number, y: number} | null>(null);
   const [routingTo, setRoutingTo] = useState<any | null>(null);
+  const [route, setRoute] = useState<{x: number, y: number}[]>([]);
   
   // PWA & UX States
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -187,8 +292,13 @@ export default function PublicMap() {
         const querySnapshot = await getDocs(q);
         const markersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setMarkers(markersData);
+
+        const qPaths = query(collection(db, 'paths'), where('mapId', '==', mapId));
+        const pathsSnapshot = await getDocs(qPaths);
+        const pathsData = pathsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setPaths(pathsData);
       } catch (error) {
-        console.error("Error fetching map:", error);
+        console.error("Error fetching map data:", error);
       } finally {
         setLoading(false);
       }
@@ -196,6 +306,15 @@ export default function PublicMap() {
 
     fetchData();
   }, [mapId]);
+
+  useEffect(() => {
+    if (userLocation && routingTo) {
+      const calculatedRoute = findShortestPath(userLocation, routingTo, paths);
+      setRoute(calculatedRoute);
+    } else {
+      setRoute([]);
+    }
+  }, [userLocation, routingTo, paths]);
 
   const handleLocateMe = () => {
     // In a real CRS.Simple map, GPS coordinates don't map directly to image pixels
@@ -473,6 +592,19 @@ export default function PublicMap() {
           </Marker>
         ))}
 
+        {/* Render Paths (Subtle background) */}
+        {paths.map(path => (
+          <Polyline
+            key={path.id}
+            positions={path.points.map((p: any) => [p.y, p.x])}
+            color="#6366f1"
+            weight={3}
+            opacity={0.15}
+            lineCap="round"
+            lineJoin="round"
+          />
+        ))}
+
         {userLocation && (
           <Marker 
             position={[userLocation.y, userLocation.x]}
@@ -487,12 +619,9 @@ export default function PublicMap() {
           </Marker>
         )}
 
-        {userLocation && routingTo && (
+        {route.length > 0 && (
           <Polyline 
-            positions={[
-              [userLocation.y, userLocation.x],
-              [routingTo.y, routingTo.x]
-            ]}
+            positions={route.map(p => [p.y, p.x])}
             color="#3b82f6"
             weight={4}
             dashArray="10, 10"

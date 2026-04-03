@@ -49,7 +49,15 @@ service cloud.firestore {
              data.y is number &&
              (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
              (!('icon' in data) || (data.icon is string && data.icon.size() < 50)) &&
-             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 2000));
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() < 2000)) &&
+             (!('markerNumber' in data) || (data.markerNumber is string && data.markerNumber.size() < 10));
+    }
+
+    function isValidPath(data) {
+      return hasRequiredFields(['mapId', 'points']) &&
+             data.mapId is string &&
+             data.points is list &&
+             data.points.size() >= 2 && data.points.size() < 200;
     }
 
     // ===============================================================
@@ -87,6 +95,24 @@ service cloud.firestore {
                     
       allow update: if isAuthenticated() && 
                     isValidMarker(request.resource.data) &&
+                    request.resource.data.mapId == resource.data.mapId &&
+                    get(/databases/$(database)/documents/maps/$(resource.data.mapId)).data.userId == request.auth.uid;
+                    
+      allow delete: if isAuthenticated() && 
+                    get(/databases/$(database)/documents/maps/$(resource.data.mapId)).data.userId == request.auth.uid;
+    }
+
+    match /paths/{pathId} {
+      // Paths are public so anyone can view them on the shared map
+      allow read: if true;
+      
+      // To create/update/delete a path, the user must own the map it belongs to
+      allow create: if isAuthenticated() && 
+                    isValidPath(request.resource.data) &&
+                    get(/databases/$(database)/documents/maps/$(request.resource.data.mapId)).data.userId == request.auth.uid;
+                    
+      allow update: if isAuthenticated() && 
+                    isValidPath(request.resource.data) &&
                     request.resource.data.mapId == resource.data.mapId &&
                     get(/databases/$(database)/documents/maps/$(resource.data.mapId)).data.userId == request.auth.uid;
                     

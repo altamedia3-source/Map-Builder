@@ -3,21 +3,21 @@ import { renderToString } from 'react-dom/server';
 import { useParams, useNavigate } from 'react-router';
 import { doc, getDoc, collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, ImageOverlay, Marker, Popup, useMapEvents, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, X, MapPin, Coffee, Bed, Waves, Info, Building, Undo2, Redo2, Utensils, FerrisWheel, PawPrint, ShoppingBag, Car, Camera, HeartPulse, Ticket, TreePine, Gamepad2, DoorOpen, Shield, Moon, LogOut, BatteryCharging, Droplets, Users, Search, Waypoints, Check, MousePointer2 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 const ALL_ICONS = Object.keys(LucideIcons).filter(key => 
   key !== 'createLucideIcon' && key !== 'default' && key !== 'Icon' && key !== 'LucideProps' && /^[A-Z]/.test(key)
 );
 
-type ActionType = 'ADD' | 'EDIT' | 'DELETE';
+type ActionType = 'ADD' | 'EDIT' | 'DELETE' | 'ADD_PATH' | 'DELETE_PATH';
 
 interface Action {
   type: ActionType;
-  markerId: string;
+  id: string;
   newData?: any;
   oldData?: any;
 }
@@ -135,11 +135,13 @@ export default function MapBuilder() {
   const navigate = useNavigate();
   const [mapData, setMapData] = useState<any>(null);
   const [markers, setMarkers] = useState<any[]>([]);
+  const [paths, setPaths] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Builder state
-  const [isAddingMarker, setIsAddingMarker] = useState(false);
+  const [mode, setMode] = useState<'SELECT' | 'ADD_MARKER' | 'DRAW_PATH'>('SELECT');
   const [selectedLocation, setSelectedLocation] = useState<{x: number, y: number} | null>(null);
+  const [currentPathPoints, setCurrentPathPoints] = useState<{x: number, y: number}[]>([]);
   const [editingMarker, setEditingMarker] = useState<any>(null);
   
   // Form state
@@ -177,14 +179,24 @@ export default function MapBuilder() {
     fetchMap();
 
     // Listen to markers
-    const q = query(collection(db, 'markers'), where('mapId', '==', id));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qMarkers = query(collection(db, 'markers'), where('mapId', '==', id));
+    const unsubscribeMarkers = onSnapshot(qMarkers, (snapshot) => {
       const markersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMarkers(markersData);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Listen to paths
+    const qPaths = query(collection(db, 'paths'), where('mapId', '==', id));
+    const unsubscribePaths = onSnapshot(qPaths, (snapshot) => {
+      const pathsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPaths(pathsData);
+    });
+
+    return () => {
+      unsubscribeMarkers();
+      unsubscribePaths();
+    };
   }, [id, navigate]);
 
   useEffect(() => {
@@ -219,17 +231,21 @@ export default function MapBuilder() {
     
     try {
       if (action.type === 'ADD') {
-        await deleteDoc(doc(db, 'markers', action.markerId));
+        await deleteDoc(doc(db, 'markers', action.id));
       } else if (action.type === 'EDIT') {
-        await updateDoc(doc(db, 'markers', action.markerId), action.oldData);
+        await updateDoc(doc(db, 'markers', action.id), action.oldData);
       } else if (action.type === 'DELETE') {
-        await setDoc(doc(db, 'markers', action.markerId), action.oldData);
+        await setDoc(doc(db, 'markers', action.id), action.oldData);
+      } else if (action.type === 'ADD_PATH') {
+        await deleteDoc(doc(db, 'paths', action.id));
+      } else if (action.type === 'DELETE_PATH') {
+        await setDoc(doc(db, 'paths', action.id), action.oldData);
       }
       
       setHistory(newHistory);
       setRedoStack(prev => [...prev, action]);
       
-      if (editingMarker?.id === action.markerId) {
+      if (editingMarker?.id === action.id) {
         setEditingMarker(null);
       }
     } catch (error) {
@@ -245,17 +261,21 @@ export default function MapBuilder() {
     
     try {
       if (action.type === 'ADD') {
-        await setDoc(doc(db, 'markers', action.markerId), action.newData);
+        await setDoc(doc(db, 'markers', action.id), action.newData);
       } else if (action.type === 'EDIT') {
-        await updateDoc(doc(db, 'markers', action.markerId), action.newData);
+        await updateDoc(doc(db, 'markers', action.id), action.newData);
       } else if (action.type === 'DELETE') {
-        await deleteDoc(doc(db, 'markers', action.markerId));
+        await deleteDoc(doc(db, 'markers', action.id));
+      } else if (action.type === 'ADD_PATH') {
+        await setDoc(doc(db, 'paths', action.id), action.newData);
+      } else if (action.type === 'DELETE_PATH') {
+        await deleteDoc(doc(db, 'paths', action.id));
       }
       
       setRedoStack(newRedoStack);
       setHistory(prev => [...prev, action]);
       
-      if (editingMarker?.id === action.markerId) {
+      if (editingMarker?.id === action.id) {
         setEditingMarker(null);
       }
     } catch (error) {
@@ -265,11 +285,60 @@ export default function MapBuilder() {
   };
 
   const handleMapClick = (e: L.LeafletMouseEvent) => {
-    if (isAddingMarker) {
+    if (mode === 'ADD_MARKER') {
       setSelectedLocation({ x: e.latlng.lng, y: e.latlng.lat });
       setFormData({ name: '', description: '', category: 'info', imageUrl: '', markerNumber: '', icon: '' });
       setEditingMarker(null);
-      setIsAddingMarker(false);
+      setMode('SELECT');
+    } else if (mode === 'DRAW_PATH') {
+      setCurrentPathPoints(prev => [...prev, { x: e.latlng.lng, y: e.latlng.lat }]);
+    }
+  };
+
+  const handleSavePath = async () => {
+    if (currentPathPoints.length < 2) return;
+
+    try {
+      const newDocRef = doc(collection(db, 'paths'));
+      const pathData = {
+        mapId: id,
+        points: currentPathPoints,
+        createdAt: new Date()
+      };
+      await setDoc(newDocRef, pathData);
+
+      setHistory(prev => [...prev, {
+        type: 'ADD_PATH',
+        id: newDocRef.id,
+        newData: pathData
+      }]);
+      setRedoStack([]);
+      setCurrentPathPoints([]);
+      setMode('SELECT');
+    } catch (error) {
+      console.error("Error saving path:", error);
+      alert("Failed to save path");
+    }
+  };
+
+  const handleDeletePath = async (pathId: string) => {
+    if (window.confirm("Delete this path?")) {
+      try {
+        const pathToDelete = paths.find(p => p.id === pathId);
+        if (!pathToDelete) return;
+
+        const { id: _, ...oldData } = pathToDelete;
+        await deleteDoc(doc(db, 'paths', pathId));
+
+        setHistory(prev => [...prev, {
+          type: 'DELETE_PATH',
+          id: pathId,
+          oldData: oldData
+        }]);
+        setRedoStack([]);
+      } catch (error) {
+        console.error("Error deleting path:", error);
+      }
     }
   };
 
@@ -293,7 +362,7 @@ export default function MapBuilder() {
         
         setHistory(prev => [...prev, {
           type: 'EDIT',
-          markerId: editingMarker.id,
+          id: editingMarker.id,
           oldData: oldData,
           newData: newData
         }]);
@@ -310,7 +379,7 @@ export default function MapBuilder() {
         
         setHistory(prev => [...prev, {
           type: 'ADD',
-          markerId: newDocRef.id,
+          id: newDocRef.id,
           newData: markerData
         }]);
         setRedoStack([]);
@@ -334,7 +403,7 @@ export default function MapBuilder() {
         
         setHistory(prev => [...prev, {
           type: 'DELETE',
-          markerId: markerId,
+          id: markerId,
           oldData: oldData
         }]);
         setRedoStack([]);
@@ -390,20 +459,36 @@ export default function MapBuilder() {
               <Redo2 className="w-5 h-5" />
             </button>
           </div>
-          <button 
-            onClick={() => setIsAddingMarker(!isAddingMarker)}
-            className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
-              isAddingMarker 
-                ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
-            }`}
-          >
-            {isAddingMarker ? (
-              <>Click on map to place</>
-            ) : (
-              <><Plus className="w-4 h-4" /> Add Marker</>
-            )}
-          </button>
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => {
+                setMode('SELECT');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${mode === 'SELECT' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <MousePointer2 className="w-3.5 h-3.5" />
+              Select
+            </button>
+            <button
+              onClick={() => {
+                setMode('ADD_MARKER');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${mode === 'ADD_MARKER' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Marker
+            </button>
+            <button
+              onClick={() => {
+                setMode('DRAW_PATH');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${mode === 'DRAW_PATH' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Waypoints className="w-3.5 h-3.5" />
+              Path
+            </button>
+          </div>
+
           <a 
             href={`/map/${id}`}
             target="_blank"
@@ -417,7 +502,36 @@ export default function MapBuilder() {
 
       <div className="flex-1 flex relative overflow-hidden">
         {/* Map Area */}
-        <div className={`flex-1 relative ${isAddingMarker ? 'cursor-crosshair' : ''}`}>
+        <div className={`flex-1 relative ${mode !== 'SELECT' ? 'cursor-crosshair' : ''}`}>
+          {mode === 'DRAW_PATH' && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2">
+              <div className="bg-white px-4 py-2 rounded-full shadow-xl border border-indigo-100 flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
+                  <span className="text-xs font-bold text-slate-700">Drawing Path: {currentPathPoints.length} points</span>
+                </div>
+                <div className="w-px h-4 bg-slate-200"></div>
+                <button 
+                  onClick={handleSavePath}
+                  disabled={currentPathPoints.length < 2}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700 disabled:text-slate-300 flex items-center gap-1"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Finish
+                </button>
+                <button 
+                  onClick={() => {
+                    setCurrentPathPoints([]);
+                    setMode('SELECT');
+                  }}
+                  className="text-xs font-bold text-red-500 hover:text-red-600 flex items-center gap-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           <MapContainer 
             crs={L.CRS.Simple} 
             bounds={bounds} 
@@ -431,6 +545,36 @@ export default function MapBuilder() {
               url={mapData.imageUrl}
               bounds={bounds}
             />
+            
+            {/* Render Paths */}
+            {paths.map(path => (
+              <Polyline
+                key={path.id}
+                positions={path.points.map((p: any) => [p.y, p.x])}
+                color="#6366f1"
+                weight={4}
+                opacity={0.6}
+                lineCap="round"
+                lineJoin="round"
+                eventHandlers={{
+                  click: (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    handleDeletePath(path.id);
+                  }
+                }}
+              />
+            ))}
+
+            {/* Render Current Drawing Path */}
+            {currentPathPoints.length > 0 && (
+              <Polyline
+                positions={currentPathPoints.map(p => [p.y, p.x])}
+                color="#6366f1"
+                weight={4}
+                dashArray="10, 10"
+                opacity={0.8}
+              />
+            )}
             
             {markers.map(marker => (
               <Marker 
