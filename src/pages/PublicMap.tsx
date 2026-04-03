@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { renderToString } from 'react-dom/server';
 import { useParams, useSearchParams } from 'react-router';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -54,27 +55,36 @@ const CATEGORY_COLORS: Record<string, string> = {
 // Custom HTML Icon for Map
 const createCustomIcon = (category: string, markerNumber?: string) => {
   const colorClass = CATEGORY_COLORS[category] || 'bg-indigo-600';
+  const iconNode = CATEGORY_ICONS[category] || CATEGORY_ICONS['info'];
+  const iconHtml = renderToString(iconNode);
   
   if (markerNumber) {
     return L.divIcon({
-      className: 'custom-marker',
-      html: `<div class="w-8 h-8 rounded-full ${colorClass} text-white flex items-center justify-center shadow-lg border-2 border-white transform transition-transform hover:scale-110 font-bold text-sm">
-              ${markerNumber}
+      className: 'custom-marker bg-transparent border-none',
+      html: `<div class="flex flex-col items-center transform transition-transform hover:scale-110 drop-shadow-md">
+              <div class="px-2 py-1 min-w-[2.5rem] rounded-xl ${colorClass} text-white flex flex-col items-center justify-center border-2 border-white z-10">
+                ${iconHtml}
+                <span class="text-xs font-bold mt-0.5">${markerNumber}</span>
+              </div>
+              <div class="w-3 h-3 ${colorClass} rotate-45 -mt-2 border-r-2 border-b-2 border-white"></div>
              </div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16],
+      iconSize: [40, 50],
+      iconAnchor: [20, 50],
+      popupAnchor: [0, -50],
     });
   }
 
   return L.divIcon({
-    className: 'custom-marker',
-    html: `<div class="w-8 h-8 rounded-full ${colorClass} text-white flex items-center justify-center shadow-lg border-2 border-white transform transition-transform hover:scale-110">
-            <div class="w-3 h-3 bg-white rounded-full"></div>
+    className: 'custom-marker bg-transparent border-none',
+    html: `<div class="flex flex-col items-center transform transition-transform hover:scale-110 drop-shadow-md">
+            <div class="w-8 h-8 rounded-full ${colorClass} text-white flex items-center justify-center border-2 border-white z-10">
+              ${iconHtml}
+            </div>
+            <div class="w-3 h-3 ${colorClass} rotate-45 -mt-2 border-r-2 border-b-2 border-white"></div>
            </div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+    iconSize: [32, 42],
+    iconAnchor: [16, 42],
+    popupAnchor: [0, -42],
   });
 };
 
