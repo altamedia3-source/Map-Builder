@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, auth, signOut } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Map, Plus, LogOut, MoreVertical, Edit2, Trash2, ExternalLink } from 'lucide-react';
+import { Map, Plus, LogOut, MoreVertical, Edit2, Trash2, ExternalLink, Shield } from 'lucide-react';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [maps, setMaps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,6 +174,15 @@ export default function Dashboard() {
           <span>Dashboard</span>
         </div>
         <div className="flex items-center gap-4">
+          {isAdmin && (
+            <button 
+              onClick={() => navigate('/admin')}
+              className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors border border-indigo-100"
+            >
+              <Shield className="w-4 h-4" />
+              Admin Panel
+            </button>
+          )}
           <span className="text-sm text-slate-600 hidden md:block">{user?.email}</span>
           <button 
             onClick={handleSignOut}
